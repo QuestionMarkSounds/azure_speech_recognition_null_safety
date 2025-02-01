@@ -20,15 +20,17 @@ class AzureSpeechRecognition {
   static String? _subKey;
   static String? _region;
   static String _lang = "en-EN";
+  static List<String> _langs = ["en-EN"];
   static String _timeout = "1000";
 
   /// default intitializer for almost every type except for the intent recognizer.
   /// Default language -> English
   AzureSpeechRecognition.initialize(String subKey, String region,
-      {String? lang, String? timeout}) {
+      {String? lang, List<String>? langs, String? timeout}) {
     _subKey = subKey;
     _region = region;
     if (lang != null) _lang = lang;
+    if (langs != null) _langs = langs;
     if (timeout != null) {
       if (int.parse(timeout) >= 100 && int.parse(timeout) <= 5000) {
         _timeout = timeout;
@@ -113,6 +115,7 @@ class AzureSpeechRecognition {
     if ((_subKey != null && _region != null)) {
       _channel.invokeMethod('simpleVoice', {
         'language': _lang,
+        'languages': _langs,
         'subscriptionKey': _subKey,
         'region': _region,
         'timeout': _timeout
@@ -130,6 +133,7 @@ class AzureSpeechRecognition {
     if ((_subKey != null && _region != null)) {
       _channel.invokeMethod('simpleVoiceWithAssessment', {
         'language': _lang,
+        'languages': _langs,
         'subscriptionKey': _subKey,
         'region': _region,
         'timeout': _timeout,
@@ -151,7 +155,7 @@ class AzureSpeechRecognition {
   static void continuousRecording() {
     if (_subKey != null && _region != null) {
       _channel.invokeMethod('continuousStream',
-          {'language': _lang, 'subscriptionKey': _subKey, 'region': _region});
+          {'language': _lang, 'languages': _langs, 'subscriptionKey': _subKey, 'region': _region});
     } else {
       throw "Error: SpeechRecognitionParameters not initialized correctly";
     }
@@ -167,6 +171,7 @@ class AzureSpeechRecognition {
     if ((_subKey != null && _region != null)) {
       _channel.invokeMethod('continuousStreamWithAssessment', {
         'language': _lang,
+        'languages': _langs,
         'subscriptionKey': _subKey,
         'region': _region,
         'granularity': granularity,

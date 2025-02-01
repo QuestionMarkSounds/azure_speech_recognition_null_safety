@@ -11,6 +11,7 @@ import com.microsoft.cognitiveservices.speech.audio.AudioConfig
 import com.microsoft.cognitiveservices.speech.intent.LanguageUnderstandingModel
 import com.microsoft.cognitiveservices.speech.intent.IntentRecognitionResult
 import com.microsoft.cognitiveservices.speech.intent.IntentRecognizer
+
 import com.bregant.azure_speech_recognition.MicrophoneStream
 import android.app.Activity
 
@@ -64,6 +65,7 @@ class AzureSpeechRecognitionPlugin : FlutterPlugin, Activity(), MethodCallHandle
         val speechSubscriptionKey: String = call.argument("subscriptionKey") ?: ""
         val serviceRegion: String = call.argument("region") ?: ""
         val lang: String = call.argument("language") ?: ""
+        val langs: List<String> = call.argument("languages") ?: listOf("en-US")
         val timeoutMs: String = call.argument("timeout") ?: ""
         val referenceText: String = call.argument("referenceText") ?: ""
         val phonemeAlphabet: String = call.argument("phonemeAlphabet") ?: "IPA"
@@ -71,6 +73,7 @@ class AzureSpeechRecognitionPlugin : FlutterPlugin, Activity(), MethodCallHandle
         val enableMiscue: Boolean = call.argument("enableMiscue") ?: false
         val nBestPhonemeCount: Int? = call.argument("nBestPhonemeCount") ?: null
         val granularity: PronunciationAssessmentGranularity
+//        Log.w("KTLN", call.argument("languages"))
         when (granularityString) {
             "text" -> {
                 granularity = PronunciationAssessmentGranularity.FullText
@@ -86,7 +89,7 @@ class AzureSpeechRecognitionPlugin : FlutterPlugin, Activity(), MethodCallHandle
         }
         when (call.method) {
             "simpleVoice" -> {
-                simpleSpeechRecognition(speechSubscriptionKey, serviceRegion, lang, timeoutMs)
+                simpleSpeechRecognition(speechSubscriptionKey, serviceRegion, lang, langs, timeoutMs)
                 result.success(true)
             }
 
@@ -99,6 +102,7 @@ class AzureSpeechRecognitionPlugin : FlutterPlugin, Activity(), MethodCallHandle
                     speechSubscriptionKey,
                     serviceRegion,
                     lang,
+                    langs,
                     timeoutMs,
                     nBestPhonemeCount,
                 )
@@ -110,7 +114,7 @@ class AzureSpeechRecognitionPlugin : FlutterPlugin, Activity(), MethodCallHandle
             }
 
             "continuousStream" -> {
-                micStreamContinuously(speechSubscriptionKey, serviceRegion, lang)
+                micStreamContinuously(speechSubscriptionKey, serviceRegion, lang, langs)
                 result.success(true)
             }
 
@@ -123,6 +127,7 @@ class AzureSpeechRecognitionPlugin : FlutterPlugin, Activity(), MethodCallHandle
                     speechSubscriptionKey,
                     serviceRegion,
                     lang,
+                    langs,
                     nBestPhonemeCount,
                 )
                 result.success(true)
@@ -143,12 +148,16 @@ class AzureSpeechRecognitionPlugin : FlutterPlugin, Activity(), MethodCallHandle
     }
 
     private fun simpleSpeechRecognition(
-        speechSubscriptionKey: String, serviceRegion: String, lang: String, timeoutMs: String
+        speechSubscriptionKey: String, serviceRegion: String, lang: String, langs: List<String>, timeoutMs: String
     ) {
         val logTag: String = "simpleVoice"
         try {
 
             val audioInput: AudioConfig = AudioConfig.fromDefaultMicrophoneInput()
+            val autoDetectSourceLanguageConfig: AutoDetectSourceLanguageConfig =
+                AutoDetectSourceLanguageConfig.fromLanguages(
+                    langs
+                )
 
             val config: SpeechConfig =
                 SpeechConfig.fromSubscription(speechSubscriptionKey, serviceRegion)
@@ -156,7 +165,7 @@ class AzureSpeechRecognitionPlugin : FlutterPlugin, Activity(), MethodCallHandle
             config.speechRecognitionLanguage = lang
             config.setProperty(PropertyId.Speech_SegmentationSilenceTimeoutMs, timeoutMs)
 
-            val reco: SpeechRecognizer = SpeechRecognizer(config, audioInput)
+            val reco: SpeechRecognizer = SpeechRecognizer(config, autoDetectSourceLanguageConfig, audioInput)
 
             val task: Future<SpeechRecognitionResult> = reco.recognizeOnceAsync()
 
@@ -201,6 +210,7 @@ class AzureSpeechRecognitionPlugin : FlutterPlugin, Activity(), MethodCallHandle
         speechSubscriptionKey: String,
         serviceRegion: String,
         lang: String,
+        langs: List<String>,
         timeoutMs: String,
         nBestPhonemeCount: Int?,
     ) {
@@ -213,6 +223,11 @@ class AzureSpeechRecognitionPlugin : FlutterPlugin, Activity(), MethodCallHandle
 
             var config: SpeechConfig =
                 SpeechConfig.fromSubscription(speechSubscriptionKey, serviceRegion)
+
+            val autoDetectSourceLanguageConfig: AutoDetectSourceLanguageConfig =
+                AutoDetectSourceLanguageConfig.fromLanguages(
+                    langs
+                )
 
             config.speechRecognitionLanguage = lang
             config.setProperty(PropertyId.Speech_SegmentationSilenceTimeoutMs, timeoutMs)
@@ -279,7 +294,7 @@ class AzureSpeechRecognitionPlugin : FlutterPlugin, Activity(), MethodCallHandle
     }
 
     private fun micStreamContinuously(
-        speechSubscriptionKey: String, serviceRegion: String, lang: String
+        speechSubscriptionKey: String, serviceRegion: String, lang: String, langs: List<String>
     ) {
         val logTag: String = "micStreamContinuous"
 
@@ -300,12 +315,17 @@ class AzureSpeechRecognitionPlugin : FlutterPlugin, Activity(), MethodCallHandle
         try {
             val audioConfig: AudioConfig = AudioConfig.fromDefaultMicrophoneInput()
 
+            val autoDetectSourceLanguageConfig: AutoDetectSourceLanguageConfig =
+                AutoDetectSourceLanguageConfig.fromLanguages(
+                    langs
+                )
+
             val config: SpeechConfig =
                 SpeechConfig.fromSubscription(speechSubscriptionKey, serviceRegion)
 
             config.speechRecognitionLanguage = lang
 
-            reco = SpeechRecognizer(config, audioConfig)
+            reco = SpeechRecognizer(config, autoDetectSourceLanguageConfig, audioConfig)
 
             reco.recognizing.addEventListener { _, speechRecognitionResultEventArgs ->
                 val s = speechRecognitionResultEventArgs.result.text
@@ -358,6 +378,7 @@ class AzureSpeechRecognitionPlugin : FlutterPlugin, Activity(), MethodCallHandle
         speechSubscriptionKey: String,
         serviceRegion: String,
         lang: String,
+        langs: List<String>,
         nBestPhonemeCount: Int?,
     ) {
         val logTag: String = "micStreamContinuousWithAssessment"
@@ -379,6 +400,11 @@ class AzureSpeechRecognitionPlugin : FlutterPlugin, Activity(), MethodCallHandle
         try {
             val audioConfig: AudioConfig = AudioConfig.fromDefaultMicrophoneInput()
 
+            val autoDetectSourceLanguageConfig: AutoDetectSourceLanguageConfig =
+                AutoDetectSourceLanguageConfig.fromLanguages(
+                    langs
+                )
+
             val config: SpeechConfig =
                 SpeechConfig.fromSubscription(speechSubscriptionKey, serviceRegion)
 
@@ -399,7 +425,7 @@ class AzureSpeechRecognitionPlugin : FlutterPlugin, Activity(), MethodCallHandle
 
             Log.i(logTag, pronunciationAssessmentConfig.toJson())
 
-            reco = SpeechRecognizer(config, audioConfig)
+            reco = SpeechRecognizer(config, autoDetectSourceLanguageConfig, audioConfig)
 
             pronunciationAssessmentConfig.applyTo(reco)
 
