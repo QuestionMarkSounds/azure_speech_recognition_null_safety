@@ -137,6 +137,11 @@ class AzureSpeechRecognitionPlugin : FlutterPlugin, Activity(), MethodCallHandle
                 stopContinuousMicStream(result)
             }
 
+            "cancelSimpleVoice" -> {
+                cancelActiveSimpleRecognitionTasks()
+                result.success(true)
+            }
+
             else -> {
                 result.notImplemented()
             }
@@ -145,6 +150,27 @@ class AzureSpeechRecognitionPlugin : FlutterPlugin, Activity(), MethodCallHandle
 
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
         azureChannel.setMethodCallHandler(null)
+    }
+
+    private fun cancelActiveSimpleRecognitionTasks() {
+        Log.i("AzureSpeech", "Cancelling active tasks")
+
+        // Отмена текущего запроса на распознавание
+        if (::task_global.isInitialized && !task_global.isDone) {
+            task_global.cancel(true)
+            Log.i("AzureSpeech", "Cancelled task_global")
+        }
+
+        // Закрытие SpeechRecognizer
+        if (::reco.isInitialized) {
+            try {
+                reco.stopContinuousRecognitionAsync().get()
+                reco.close()
+                Log.i("AzureSpeech", "Closed SpeechRecognizer")
+            } catch (e: Exception) {
+                Log.e("AzureSpeech", "Error while stopping SpeechRecognizer: ${e.message}")
+            }
+        }
     }
 
     private fun simpleSpeechRecognition(
