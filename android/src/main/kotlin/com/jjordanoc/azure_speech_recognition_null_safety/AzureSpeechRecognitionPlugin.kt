@@ -6,7 +6,6 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
-import io.flutter.plugin.common.PluginRegistry.Registrar
 import com.microsoft.cognitiveservices.speech.audio.AudioConfig
 import com.microsoft.cognitiveservices.speech.intent.LanguageUnderstandingModel
 import com.microsoft.cognitiveservices.speech.intent.IntentRecognitionResult
@@ -34,7 +33,7 @@ import java.util.concurrent.Semaphore
 
 
 /** AzureSpeechRecognitionPlugin */
-class AzureSpeechRecognitionPlugin : FlutterPlugin, Activity(), MethodCallHandler {
+class AzureSpeechRecognitionPlugin : FlutterPlugin, MethodCallHandler {
     private lateinit var azureChannel: MethodChannel
     private lateinit var handler: Handler
     var continuousListeningStarted: Boolean = false
@@ -43,20 +42,13 @@ class AzureSpeechRecognitionPlugin : FlutterPlugin, Activity(), MethodCallHandle
 
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         azureChannel = MethodChannel(
-            flutterPluginBinding.getFlutterEngine().getDartExecutor(), "azure_speech_recognition"
+            flutterPluginBinding.binaryMessenger, "azure_speech_recognition"
         )
         azureChannel.setMethodCallHandler(this)
-
+        handler = Handler(Looper.getMainLooper()) // Убираем инициализацию из init-блока
     }
 
     init {
-        fun registerWith(registrar: Registrar) {
-            val channel = MethodChannel(registrar.messenger(), "azure_speech_recognition")
-
-            this.azureChannel = MethodChannel(registrar.messenger(), "azure_speech_recognition")
-            this.azureChannel.setMethodCallHandler(this)
-        }
-
         handler = Handler(Looper.getMainLooper())
     }
 

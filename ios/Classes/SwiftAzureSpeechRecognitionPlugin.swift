@@ -130,6 +130,8 @@ public class SwiftAzureSpeechRecognitionPlugin: NSObject, FlutterPlugin {
                 let autoDetectLanguageConfig = try SPXAutoDetectSourceLanguageConfiguration(langs)
                 let reco = try SPXSpeechRecognizer(speechConfiguration: config, autoDetectSourceLanguageConfiguration: autoDetectLanguageConfig, audioConfiguration: audioConfig)
 
+                self.azureChannel.invokeMethod("speech.onRecognitionStarted", arguments: nil)
+
                 reco.addRecognizingEventHandler { reco, evt in
                     if self.simpleRecognitionTasks[taskId]?.isCanceled ?? false { // Discard intermediate results if the task was cancelled
                         print("Ignoring partial result. TaskID: \(taskId)")
@@ -277,8 +279,8 @@ public class SwiftAzureSpeechRecognitionPlugin: NSObject, FlutterPlugin {
             print("Starting continuous recognition")
             do {
                 let audioSession = AVAudioSession.sharedInstance()
-                try audioSession.setCategory(.record, mode: .default, options: .allowBluetooth)
-                try audioSession.setActive(true)
+                try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.allowBluetooth, .allowBluetoothA2DP, .mixWithOthers])
+                try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
                 print("Setting custom audio session")
             } catch {
                 print("An unexpected error occurred while setting up audio session: \(error.localizedDescription)")
