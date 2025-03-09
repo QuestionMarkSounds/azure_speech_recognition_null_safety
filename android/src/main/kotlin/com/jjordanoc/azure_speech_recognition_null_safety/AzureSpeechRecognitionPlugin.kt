@@ -343,6 +343,8 @@ class AzureSpeechRecognitionPlugin : FlutterPlugin, MethodCallHandler {
 
             config.speechRecognitionLanguage = lang
 
+            config.setProperty(PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, "15000")
+
             reco = SpeechRecognizer(config, autoDetectSourceLanguageConfig, audioConfig)
 
             reco.recognizing.addEventListener { _, speechRecognitionResultEventArgs ->

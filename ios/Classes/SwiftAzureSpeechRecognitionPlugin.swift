@@ -291,6 +291,9 @@ public class SwiftAzureSpeechRecognitionPlugin: NSObject, FlutterPlugin {
                 let speechConfig = try SPXSpeechConfiguration(subscription: speechSubscriptionKey, region: serviceRegion)
                 speechConfig.speechRecognitionLanguage = lang
 
+                speechConfig.setPropertyTo("5000", by: .speechSegmentationSilenceTimeoutMs)
+                speechConfig.setPropertyTo("15000", by: .speechServiceConnectionInitialSilenceTimeoutMs)
+
                 let audioConfig = SPXAudioConfiguration()
                 let autoDetectLanguageConfig = try SPXAutoDetectSourceLanguageConfiguration(langs)
 
