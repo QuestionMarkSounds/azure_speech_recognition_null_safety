@@ -18,12 +18,11 @@ class _SimpleRecognitionScreenState extends State<SimpleRecognitionScreen>
   String lang = "en-US";
   String timeout = "2000";
   bool isRecording = false;
-  late AnimationController controller;
 
   void activateSpeechRecognizer() {
     // MANDATORY INITIALIZATION
     AzureSpeechRecognition.initialize(subKey, region,
-        lang: lang, timeout: timeout);
+        lang: lang, langs: [lang, "ru-RU"],  timeout: timeout);
 
     _speechAzure.setFinalTranscription((text) {
       // do what you want with your final transcription
@@ -50,9 +49,6 @@ class _SimpleRecognitionScreenState extends State<SimpleRecognitionScreen>
   @override
   void initState() {
     _speechAzure = AzureSpeechRecognition();
-    controller =
-        AnimationController(vsync: this, duration: Duration(seconds: 2))
-          ..repeat();
     activateSpeechRecognizer();
     super.initState();
   }
@@ -69,7 +65,6 @@ class _SimpleRecognitionScreenState extends State<SimpleRecognitionScreen>
   
   @override
   void dispose() {
-    controller.dispose();
     super.dispose();
   }
 
@@ -84,18 +79,6 @@ class _SimpleRecognitionScreenState extends State<SimpleRecognitionScreen>
           children: <Widget>[
             SizedBox(
               height: 40,
-            ),
-            Center(
-              child: AnimatedBuilder(
-                child: FlutterLogo(size: 200),
-                animation: controller,
-                builder: (_, child) {
-                  return Transform.rotate(
-                    angle: controller.value * 2 * pi,
-                    child: child,
-                  );
-                },
-              ),
             ),
             SizedBox(height: 40,),
             Text('Recognized text : $_centerText\n'),

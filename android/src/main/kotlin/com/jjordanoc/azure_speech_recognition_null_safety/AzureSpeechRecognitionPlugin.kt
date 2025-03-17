@@ -1,35 +1,22 @@
 package com.jjordanoc.azure_speech_recognition_null_safety
 
+//import androidx.core.app.ActivityCompat;
+
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
 import androidx.annotation.NonNull
+import com.microsoft.cognitiveservices.speech.*
+import com.microsoft.cognitiveservices.speech.audio.AudioConfig
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
-import com.microsoft.cognitiveservices.speech.audio.AudioConfig
-import com.microsoft.cognitiveservices.speech.intent.LanguageUnderstandingModel
-import com.microsoft.cognitiveservices.speech.intent.IntentRecognitionResult
-import com.microsoft.cognitiveservices.speech.intent.IntentRecognizer
-
-import com.bregant.azure_speech_recognition.MicrophoneStream
-import android.app.Activity
-
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
-import java.util.concurrent.Callable
-import android.os.Handler
-import android.os.Looper
-import java.io.File
-import java.io.FileOutputStream
-import java.io.InputStream
-//import androidx.core.app.ActivityCompat;
-import java.net.URI
-import android.util.Log
-import android.text.TextUtils
-import com.microsoft.cognitiveservices.speech.*
-
-import java.util.concurrent.Semaphore
+import java.util.Arrays
 
 
 /** AzureSpeechRecognitionPlugin */
@@ -335,7 +322,7 @@ class AzureSpeechRecognitionPlugin : FlutterPlugin, MethodCallHandler {
 
             val autoDetectSourceLanguageConfig: AutoDetectSourceLanguageConfig =
                 AutoDetectSourceLanguageConfig.fromLanguages(
-                    langs
+                    Arrays.asList("en-US", langs[1])
                 )
 
             val config: SpeechConfig =
@@ -358,10 +345,10 @@ class AzureSpeechRecognitionPlugin : FlutterPlugin, MethodCallHandler {
                 Log.i(logTag, "Final result received: $s")
                 invokeMethod("speech.onFinalResponse", s)
             }
-
             val _task2 = reco.startContinuousRecognitionAsync()
 
             setOnTaskCompletedListener(_task2) {
+                Log.i(logTag, "Completed cont recognition")
                 continuousListeningStarted = true
                 invokeMethod("speech.onRecognitionStarted", null)
             }
