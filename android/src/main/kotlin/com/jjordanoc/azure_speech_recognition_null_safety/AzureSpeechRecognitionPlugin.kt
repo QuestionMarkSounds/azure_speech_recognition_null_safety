@@ -322,7 +322,7 @@ class AzureSpeechRecognitionPlugin : FlutterPlugin, MethodCallHandler {
 
             val autoDetectSourceLanguageConfig: AutoDetectSourceLanguageConfig =
                 AutoDetectSourceLanguageConfig.fromLanguages(
-                    Arrays.asList("en-US", langs[1])
+                    langs
                 )
 
             val config: SpeechConfig =
