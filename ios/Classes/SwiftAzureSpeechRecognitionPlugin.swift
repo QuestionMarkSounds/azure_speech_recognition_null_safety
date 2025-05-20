@@ -248,18 +248,22 @@ public class SwiftAzureSpeechRecognitionPlugin: NSObject, FlutterPlugin {
         simpleRecognitionTasks[taskId] = SimpleRecognitionTask(task: task, isCanceled: false)
     }
 
-    private func stopContinuousStream(flutterResult: FlutterResult) {
+    private func stopContinuousStream(flutterResult: @escaping FlutterResult) {
         if (continousListeningStarted) {
-            print("Stopping continous recognition")
-            do {
-                try continousSpeechRecognizer!.stopContinuousRecognition()
-                self.azureChannel.invokeMethod("speech.onRecognitionStopped", arguments: nil)
-                continousSpeechRecognizer = nil
-                continousListeningStarted = false
-                flutterResult(true)
-            }
-            catch {
-                print("Error occurred stopping continous recognition")
+            let resultHandler = flutterResult
+            DispatchQueue.global(qos: .background).async {
+                print("Stopping continous recognition")
+                do {
+                    try self.continousSpeechRecognizer?.stopContinuousRecognition()
+                    DispatchQueue.main.async {
+                        self.azureChannel.invokeMethod("speech.onRecognitionStopped", arguments: nil)
+                        self.continousSpeechRecognizer = nil
+                        self.continousListeningStarted = false
+                        resultHandler(true)
+                    }
+                } catch {
+                    print("Error occurred stopping continous recognition")
+                }
             }
         }
     }
@@ -281,7 +285,7 @@ public class SwiftAzureSpeechRecognitionPlugin: NSObject, FlutterPlugin {
                 let audioSession = AVAudioSession.sharedInstance()
                 try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.allowBluetooth, .allowBluetoothA2DP, .mixWithOthers])
                 try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-                print("Setting custom audio session")
+                print("Audio session successfully activated")
             } catch {
                 print("An unexpected error occurred while setting up audio session: \(error.localizedDescription)")
                 return
@@ -291,6 +295,7 @@ public class SwiftAzureSpeechRecognitionPlugin: NSObject, FlutterPlugin {
                 let speechConfig = try SPXSpeechConfiguration(subscription: speechSubscriptionKey, region: serviceRegion)
                 speechConfig.speechRecognitionLanguage = lang
 
+                // Set timeouts to ensure the recognizer doesn't stop prematurely
                 speechConfig.setPropertyTo("5000", by: .speechSegmentationSilenceTimeoutMs)
                 speechConfig.setPropertyTo("15000", by: .speechServiceConnectionInitialSilenceTimeoutMs)
 
