@@ -256,9 +256,7 @@ public class SwiftAzureSpeechRecognitionPlugin: NSObject, FlutterPlugin {
                 do {
                     try self.continousSpeechRecognizer?.stopContinuousRecognition()
                     DispatchQueue.main.async {
-                        self.azureChannel.invokeMethod("speech.onRecognitionStopped", arguments: nil)
-                        self.continousSpeechRecognizer = nil
-                        self.continousListeningStarted = false
+                        self.onContinuousRecognitionStopped()
                         resultHandler(true)
                     }
                 } catch {
@@ -268,14 +266,26 @@ public class SwiftAzureSpeechRecognitionPlugin: NSObject, FlutterPlugin {
         }
     }
 
+    private func onContinuousRecognitionStopped() {
+        self.azureChannel.invokeMethod("speech.onRecognitionStopped", arguments: nil)
+        self.continousSpeechRecognizer = nil
+        self.continousListeningStarted = false
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(.playback, mode: .default)
+            try audioSession.setActive(true)
+            print("Audio session switched to playback")
+        } catch {
+            print("Failed to switch to playback mode: \(error.localizedDescription)")
+        }
+    }
+
     private func continuousStream(speechSubscriptionKey: String, serviceRegion: String, lang: String, langs: [String]) {
         if continousListeningStarted {
             print("Stopping continuous recognition")
             do {
                 try continousSpeechRecognizer?.stopContinuousRecognition()
-                self.azureChannel.invokeMethod("speech.onRecognitionStopped", arguments: nil)
-                continousSpeechRecognizer = nil
-                continousListeningStarted = false
+                self.onContinuousRecognitionStopped()
             } catch {
                 print("Error occurred stopping continuous recognition: \(error.localizedDescription)")
             }
@@ -296,7 +306,7 @@ public class SwiftAzureSpeechRecognitionPlugin: NSObject, FlutterPlugin {
                 speechConfig.speechRecognitionLanguage = lang
 
                 // Set timeouts to ensure the recognizer doesn't stop prematurely
-                speechConfig.setPropertyTo("5000", by: .speechSegmentationSilenceTimeoutMs)
+                // speechConfig.setPropertyTo("1000", by: .speechSegmentationSilenceTimeoutMs)
                 speechConfig.setPropertyTo("15000", by: .speechServiceConnectionInitialSilenceTimeoutMs)
 
                 let audioConfig = SPXAudioConfiguration()
